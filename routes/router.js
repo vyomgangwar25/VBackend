@@ -40,4 +40,46 @@ router.post("/register", async (req, resp) => {
     }
 });
 
+
+
+router.post("/login",async(req,resp)=>{
+    // console.log(req.body)
+    const{email,password}=req.body;
+    try{
+     const userValid=await userdb.findOne({email:email});
+     if(userValid)
+     {
+         const isMatch= await  bcrypt.compare(password,userValid.password)
+ 
+         if(!isMatch)
+         {
+             return resp.status(422).json({ error: "invalid data" });
+         }
+         else{
+             //if match that is registered successfully then generate token
+             // for token generation there is a secret key and a payload and add cookie
+             const token = await userValid.generateAuthtoken();
+             console.log(token)
+ 
+           // cookiegeneration
+           resp.cookie("usercookie",token,{
+           expires:new Date(Date.now()+9000000),
+           httpOnly:true
+           })
+ 
+          //send user and cookie to frontend
+           const result={
+             userValid,
+             token
+           }
+           resp.status(201).json({status:201,result})
+         }
+     }
+ 
+    } catch{
+ 
+    }
+ })
+ 
+
 module.exports = router;
