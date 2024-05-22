@@ -3,26 +3,27 @@ const userdb = require("../models/userSchema");
 const router = new express.Router();
 const bcrypt=require('bcryptjs')
 const validator = require('validator');
+const Task = require('../db/taskSchema');
 const auth = require('../middleware/auth');
 
 // Registration route
 router.post("/register", async (req, resp) => {
-    // Extract data from the request body
+    
     const { fname, email, password, cpassword } = req.body;
 
     try {
-        // Validate email format
+       
         if (!validator.isEmail(email)) {
             return resp.status(400).json({ error: "Invalid email format" });
         }
 
-        // Check if user with the provided email already exists
+      
         const preuser = await userdb.findOne({ email: email });
         if (preuser) {
             return resp.status(422).json({ error: "User already exists" });
         }
 
-        // Create a new user document
+         
         const finalUser = new userdb({
             fname: fname,
             email: email,
@@ -30,10 +31,10 @@ router.post("/register", async (req, resp) => {
             cpassword: cpassword
         });
 
-        // Save the new user document to the database
+        
         const storeData = await finalUser.save();
 
-        // Return success response
+       
         return resp.status(201).json({ status: 201, storeData });
     } catch (error) {
         console.error("Error occurred during registration:", error);
@@ -44,7 +45,7 @@ router.post("/register", async (req, resp) => {
 
 
 router.post("/login",async(req,resp)=>{
-    // console.log(req.body)
+    
     const{email,password}=req.body;
     try{
      const userValid=await userdb.findOne({email:email});
@@ -57,18 +58,17 @@ router.post("/login",async(req,resp)=>{
              return resp.status(422).json({ error: "invalid data" });
          }
          else{
-             //if match that is registered successfully then generate token
-             // for token generation there is a secret key and a payload and add cookie
+            
              const token = await userValid.generateAuthtoken();
              console.log("ANV" , token ,"ABCd")
  
-           // cookiegeneration
+           
            resp.cookie("usercookie",token,{
            expires:new Date(Date.now()+9000000),
            httpOnly:true
            })
  
-          //send user and cookie to frontend
+           
            const result={
              userValid,
              token
@@ -84,12 +84,10 @@ router.post("/login",async(req,resp)=>{
 
 
 
-  //Task CRUD operations
-// Create a task
+  
 router.post("/tasks", auth, async (req, resp) => {
     const { title, description } = req.body;
-    // console.log(title, description)
-    // console.log(req.user)
+    
     const owner = req.user._id.toString();
     
     
@@ -106,6 +104,7 @@ router.post("/tasks", auth, async (req, resp) => {
 
 // Read all tasks
 router.get("/tasks", auth, async (req, resp) => {
+    console.log(req.user," newuser")
     try {
         await req.user.populate('tasks').execPopulate();
         resp.status(200).json({ status: 200, tasks: req.user.tasks });
@@ -115,7 +114,7 @@ router.get("/tasks", auth, async (req, resp) => {
     }
 });
 
-// Update a task
+ 
 router.patch("/tasks/:id", auth, async (req, resp) => {
     const updates = Object.keys(req.body);
     const allowedUpdates = ['title', 'description', 'completed'];
@@ -141,8 +140,9 @@ router.patch("/tasks/:id", auth, async (req, resp) => {
     }
 });
 
-// Delete a task
+ 
 router.delete("/tasks/:id", auth, async (req, resp) => {
+    console.log(req.params.id,  "newid")
     try {
         const task = await Task.findOneAndDelete({ _id: req.params.id, owner: req.user._id });
 

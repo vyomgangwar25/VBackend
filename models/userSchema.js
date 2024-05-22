@@ -1,23 +1,24 @@
-const mongoose=require('mongoose');
+const mongoose = require('mongoose');
 const validator = require('validator');
-const bcrypt=require('bcryptjs')
-const jwt=require('jsonwebtoken')
-const keySecret='vyomgangwarakarshgangwarakagargangwar'
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const Task = require('../db/taskSchema');
 
-const userSchema=new mongoose.Schema({
-    fname:{
-        type:String,
-        required:true,
-        trim:true
+const keySecret = 'vyomgangwarakarshgangwarakagargangwar';
+
+const userSchema = new mongoose.Schema({
+    fname: {
+        type: String,
+        required: true,
+        trim: true
     },
-    email:{
-        type:String,
-        required:true,
-        uinque:true,
-        validate(value){
-            if(!validator.isEmail(value))
-            {
-                throw new Error("not valid email");
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        validate(value) {
+            if (!validator.isEmail(value)) {
+                throw new Error("Not a valid email");
             }
         }
     },
@@ -35,45 +36,34 @@ const userSchema=new mongoose.Schema({
         {
             token: {
                 type: String,
-                required: true,
+                required: true
             }
         }
     ],
-    tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }]
-})
+    tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }]  
+});
 
-userSchema.pre("save",async function(next){
-    if(this.isModified("password"))
-    {
-        this.password = await bcrypt.hash(this.password,12);
-        this.cpassword = await bcrypt.hash(this.cpassword,12);
+userSchema.pre("save", async function (next) {
+    if (this.isModified("password")) {
+        this.password = await bcrypt.hash(this.password, 12);
+        this.cpassword = await bcrypt.hash(this.cpassword, 12);
     }
-    
-
     next();
-})
+});
 
-
-// token generate
-userSchema.methods.generateAuthtoken =  async function(){
-    try{
-            let token23 = jwt.sign({_id:this._id},keySecret,{
-                expiresIn:"1d"
-            })
-            //after creation of token save that token in schema
-            this.tokens=this.tokens.concat({token:token23})
-            await this.save();
-            return token23;
+userSchema.methods.generateAuthToken = async function () {
+    try {
+        let token23 = jwt.sign({ _id: this._id }, keySecret, {
+            expiresIn: "1d"
+        });
+        this.tokens = this.tokens.concat({ token: token23 });
+        await this.save();
+        return token23;
+    } catch (error) {
+        throw new Error(error);
     }
-    catch(error){
-        resp.status(422).json(error)
-    }
+};
 
- }
+const User = mongoose.model("User", userSchema);
 
-
-const userdb=new mongoose.model("users",userSchema)
-
-
-
-module.exports = userdb;
+module.exports = User;
